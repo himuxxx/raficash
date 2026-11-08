@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>📱 Rafi Telecom - সম্পূর্ণ হিসাব</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f4f7fc; --card: #ffffff; --primary: #0d3b66; --primary-light: #1a5a8a;
+      --accent: #f4a261; --accent-hover: #e76f51; --danger: #c62828; --warning: #e9c46a;
+      --text: #1e293b; --text-light: #475569; --border: #e2e8f0;
+      --shadow: 0 4px 20px rgba(0,0,0,0.05); --radius: 14px; --radius-sm: 10px;
+      --cash-color: #0d3b66; --due-color: #c62828; --sale-color: #2a9d8f;
+      --service-color: #6a4c93; --bkash: #d81b60; --nagad: #ef6c00; --rocket: #4527a0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Noto Sans Bengali', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding-bottom: 20px; }
+    .header { background: linear-gradient(135deg, #0d3b66, #1a5a8a); color: white; padding: 14px 20px; text-align: center; position: sticky; top: 0; z-index: 120; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .header h1 { font-size: 1.5em; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .header .shop-name { font-size: 0.9em; opacity: 0.9; margin-top: 4px; }
+    .header .date-badge { background: rgba(255,255,255,0.2); padding: 4px 14px; border-radius: 20px; font-size: 0.8em; }
+    .role-badge { background: #f4a261; color: #1e293b; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; }
+    .cloud-badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.75em; }
+    .tab-nav { display: flex; overflow-x: auto; background: white; border-bottom: 2px solid var(--border); position: sticky; top: 105px; z-index: 99; box-shadow: 0 2px 8px rgba(0,0,0,0.03); scrollbar-width: none; }
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .tab-btn { flex: 1 0 auto; padding: 10px 8px; border: none; background: transparent; font-weight: 600; color: #64748b; white-space: nowrap; transition: 0.2s; border-bottom: 3px solid transparent; font-size: 0.75em; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; font-family: inherit; }
+    .tab-btn:hover { color: var(--primary); background: #f8fafc; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); background: #f1f5f9; }
+    .tab-icon { font-size: 1.4em; }
+    .main-container { max-width: 1000px; margin: 0 auto; padding: 12px 16px; }
+    .tab-content { display: none; animation: fade 0.3s; }
+    .tab-content.active { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .card { background: var(--card); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .card h3 { font-size: 1.1em; margin-bottom: 14px; color: var(--primary); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: white; border-radius: var(--radius-sm); padding: 14px; text-align: center; box-shadow: var(--shadow); border-left: 5px solid var(--accent); }
+    .stat-card.cash { border-left-color: var(--cash-color); background: #f0f7ff; }
+    .stat-card.due { border-left-color: var(--due-color); background: #fff5f5; }
+    .stat-card.sale { border-left-color: var(--sale-color); background: #f0fdf9; }
+    .stat-card.service { border-left-color: var(--service-color); background: #f9f5ff; }
+    .stat-card.mfs-bkash { border-left-color: var(--bkash); background: #fce4ec; }
+    .stat-card.mfs-nagad { border-left-color: var(--nagad); background: #fff3e0; }
+    .stat-card.mfs-rocket { border-left-color: var(--rocket); background: #ede7f6; }
+    .stat-card.flexi-bal { border-left-color: var(--service-color); background: #f9f5ff; }
+    .stat-value { font-size: 1.5em; font-weight: 700; }
+    .stat-label { font-size: 0.8em; color: var(--text-light); }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { flex: 1; min-width: 120px; margin-bottom: 10px; }
+    .form-group label { display: block; font-weight: 600; font-size: 0.85em; margin-bottom: 4px; color: #334155; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: var(--radius-sm); font-size: 0.9em; background: #f8fafc; font-family: inherit; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); background: white; }
+    .btn { padding: 10px 16px; border: none; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600; font-size: 0.9em; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; white-space: nowrap; }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-accent { background: var(--accent); color: #1e293b; }
+    .btn-accent:hover { background: var(--accent-hover); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-outline { background: white; border: 2px solid var(--primary); color: var(--primary); }
+    .btn-edit { background: #f59e0b; color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 0.75em; }
+    .btn-block { width: 100%; justify-content: center; }
+    .btn-green { background: #2a9d8f; color: white; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+    table th, table td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+    table th { background: #f8fafc; font-weight: 700; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .amount { font-weight: 700; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 600; }
+    .badge-cash { background: #e6f0ff; color: #0d3b66; }
+    .badge-credit { background: #ffebee; color: #c62828; }
+    .badge-send { background: #ffebee; color: #c62828; }
+    .badge-receive { background: #e6f9f0; color: #2a9d8f; }
+    .badge-bill { background: #fff3e0; color: #e65100; }
+    .badge-admin { background: #f4a261; color: #1e293b; }
+    .badge-user { background: #e6f0ff; color: #0d3b66; }
+    .table-wrapper { overflow-x: auto; }
+    .balance-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .balance-box { flex: 1; min-width: 150px; background: white; border-radius: var(--radius-sm); padding: 12px; text-align: center; box-shadow: var(--shadow); }
+    .balance-box h4 { margin-bottom: 6px; }
+    .bal-amount { font-size: 1.6em; font-weight: 700; }
+    .customer-card { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; }
+    .customer-card:hover { background: #f8fafc; }
+    .customer-card.active-customer { border: 2px solid var(--primary); background: #f0f7ff; }
+    .login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index:9999; }
+    .login-box { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
+    .login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 8px; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1e293b; color: white; padding: 12px 28px; border-radius: 30px; z-index: 999; opacity: 0; transition: 0.3s; pointer-events: none; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success { background: #0d3b66; }
+    .toast.error { background: #c62828; }
+    @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+    .cat-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .cat-tag { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 6px; font-size: 0.85em; }
+    .cat-tag button { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: bold; }
+    .notice { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 12px; font-size: 0.85em; margin-bottom: 12px; }
+    .notice.err { background: #fef2f2; border-color: #fecaca; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>🔐 Rafi Telecom</h2>
+    <p style="font-size:0.85em;color:#64748b;margin:6px 0 14px;">Admin / Staff — যেকোনো ডিভাইস থেকে একই হিসাব</p>
+    <input type="email" id="authEmail" placeholder="ইমেইল">
+    <input type="password" id="authPassword" placeholder="পাসওয়ার্ড (৬+ অক্ষর)">
+    <button class="btn btn-primary btn-block" id="loginBtn">🔑 লগইন</button>
+    <button class="btn btn-accent btn-block" id="registerBtn" style="margin-top:8px;">✨ নতুন অ্যাকাউন্ট তৈরি</button>
+    <p id="authError" style="color:red; margin-top:10px; font-size:0.85em;"></p>
+    <p style="margin-top:12px; font-size:0.75em; color:gray;">সব ডিভাইসে একই ডাটা দেখতে লগইন করুন — ডাটা এখন Supabase Cloud-এ save হয়, ফোনের localStorage-এ না।<br>প্রথম অ্যাকাউন্টটি Admin হবে, পরেরগুলো User (Staff) হবে।</p>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until login) -->
+<div id="appMain" style="display:none;">
+  <div class="header">
+    <h1>📱 Rafi Telecom</h1>
+    <div class="shop-name">ইলেকট্রনিক্স ও সার্ভিস সেন্টার</div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:6px;">
+      <span class="date-badge" id="headerDate"></span>
+      <span class="role-badge" id="roleBadge">👤 User</span>
+      <span class="cloud-badge" id="cloudBadge">☁️ Cloud: চেক হচ্ছে…</span>
+      <button class="btn btn-danger btn-sm" id="logoutBtn">🚪 লগআউট</button>
+    </div>
+  </div>
+  <div class="tab-nav" id="tabNav">
+    <button class="tab-btn active" data-tab="dashboard"><span class="tab-icon">📊</span>ড্যাশবোর্ড</button>
+    <button class="tab-btn" data-tab="sale"><span class="tab-icon">🛒</span>বিক্রয়</button>
+    <button class="tab-btn" data-tab="services"><span class="tab-icon">📱</span>Flexilad</button>
+    <button class="tab-btn" data-tab="mfs"><span class="tab-icon">💳</span>Bkash</button>
+    <button class="tab-btn" data-tab="history"><span class="tab-icon">📋</span>ইতিহাস</button>
+    <button class="tab-btn" data-tab="dues"><span class="tab-icon">📒</span>বাকি</button>
+    <button class="tab-btn" data-tab="customers"><span class="tab-icon">👥</span>ক্রেতা</button>
+    <button class="tab-btn" data-tab="cash"><span class="tab-icon">💵</span>ক্যাশ</button>
+    <button class="tab-btn" data-tab="products"><span class="tab-icon">📦</span>পণ্য</button>
+    <button class="tab-btn" data-tab="monthly"><span class="tab-icon">📆</span>মাসিক</button>
+    <button class="tab-btn" data-tab="admin" id="adminTabBtn" style="display:none;"><span class="tab-icon">👑</span>Admin</button>
+  </div>
+  <div class="main-container">
+    <div id="cloudNotice"></div>
+    <div class="tab-content active" id="tab-dashboard"></div>
+    <div class="tab-content" id="tab-sale"></div>
+    <div class="tab-content" id="tab-services"></div>
+    <div class="tab-content" id="tab-mfs"></div>
+    <div class="tab-content" id="tab-history"></div>
+    <div class="tab-content" id="tab-dues"></div>
+    <div class="tab-content" id="tab-customers"></div>
+    <div class="tab-content" id="tab-cash"></div>
+    <div class="tab-content" id="tab-products"></div>
+    <div class="tab-content" id="tab-monthly"></div>
+    <div class="tab-content" id="tab-admin"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+// ========== SUPABASE CLIENT ==========
+const SUPABASE_URL = 'https://fwqhcaeidlsflgdtzpdl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3cWhjYWVpZGxzZmxnZHR6cGRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NDQwNTksImV4cCI6MjA5OTUyMDA1OX0.fhjT5ynsqWpWTRPPLHrPTFcG3HbdpN4omU8hs6tVsnw';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ========== APP STATE (original logic unchanged) ==========
+let products = [], sales = [], services = [], mfsTransactions = [], cashLog = [], customers = [], categories = [];
+let cashBalance = 0, flexiBalance = 0, mfsBalances = { bkash:0, nagad:0, rocket:0 };
+let cart = [], selectedCustomer = null;
+let nextId = { prod:7, sale:1, service:1, mfs:1, cash:1 };
+
+// --- NEW: cloud + role state ---
+let currentUser = null, currentRole = 'user', allProfiles = [];
+let cloudReady = false, cloudErrorMsg = '', _saveTimer = null, _realtimeChannel = null, _suppressRealtimeReload = false;
+
+const today = ()=> new Date().toISOString().slice(0,10);
+const fmt = n => Number(n).toLocaleString('bn-BD',{minimumFractionDigits:0,maximumFractionDigits:2}) + ' টাকা';
+const bdate = d => d ? d.split('-').reverse().join('/') : '';
+const toast = (msg, type='success') => {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast '+type+' show';
+  clearTimeout(t._t); t._t = setTimeout(()=> t.classList.remove('show'), 2500);
+};
+const esc = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
+const isAdmin = ()=> currentRole === 'admin';
+function setCloudBadge(txt){ const el=document.getElementById('cloudBadge'); if(el) el.textContent = txt; }
+function setRoleBadge(){
+  const el=document.getElementById('roleBadge');
+  if(el) el.textContent = (isAdmin() ? '👑 Admin' : '👤 User') + (currentUser ? ' • ' + currentUser.email : '');
+  const ab=document.getElementById('adminTabBtn');
+  if(ab) ab.style.display = isAdmin() ? 'flex' : 'none';
+}
+function showCloudNotice(){
+  const box=document.getElementById('cloudNotice'); if(!box) return;
+  if(cloudReady){ box.innerHTML=''; return; }
+  box.innerHTML = `<div class="notice err"><b>⚠️ Cloud এখনো চালু হয়নি —</b> Supabase-এ <b>supabase-setup.sql</b> চালাতে হবে। ততক্ষণ ডাটা শুধু এই ডিভাইসে (localStorage) থাকবে, অন্য ডিভাইসে দেখা যাবে না। SQL চালানোর পর পেজ refresh করলেই ☁️ Cloud: Connected দেখাবে।<br><small>${esc(cloudErrorMsg||'')}</small></div>`;
+}
+
+// ========== AUTH FUNCTIONS (original + role) ==========
+async function handleLogin() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const err = document.getElementById('authError');
+  if(!email || !password) { err.textContent = '❌ ইমেইল ও পাসওয়ার্ড দিন'; return; }
+  err.textContent = '⏳ লগইন হচ্ছে...';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error) err.textContent = '❌ ' + error.message;
+  else err.textContent = '';
+}
+async function handleRegister() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const err = document.getElementById('authError');
+  if(!email || !password) { err.textContent = '❌ ইমেইল ও পাসওয়ার্ড দিন'; return; }
+  if(password.length < 6) { err.textContent = '❌ পাসওয়ার্ড কমপক্ষে ৬ অক্ষর'; return; }
+  err.textContent = '⏳ অ্যাকাউন্ট তৈরি হচ্ছে...';
+  const { error } = await supabaseClient.auth.signUp({ email, password });
+  if(error) err.textContent = '❌ ' + error.message;
+  else err.textContent = '✅ অ্যাকাউন্ট তৈরি! এখন লগইন করুন। (প্রথম অ্যাকাউন্ট Admin হবে)';
+}
+async function handleLogout() { await supabaseClient.auth.signOut(); }
+
+// ========== CLOUD SYNC (new) — one shared row, all original fields inside ==========
+function collectShopData(){
+  return { products, sales, services, mfsTransactions, cashLog, customers, categories, cashBalance, flexiBalance, mfsBalances, nextId };
+}
+function applyShopData(d){
+  if(!d) return;
+  products = d.products || []; sales = d.sales || []; services = d.services || [];
+  mfsTransactions = d.mfsTransactions || []; cashLog = d.cashLog || []; customers = d.customers || [];
+  categories = d.categories || ['হেডফোন/ইয়ারফোন','মেমোরি কার্ড','কেবল','চার্জার','ব্যাটারি','ডিসপ্লে','অন্যান্য'];
+  cashBalance = d.cashBalance || 0; flexiBalance = d.flexiBalance || 0;
+  mfsBalances = d.mfsBalances || { bkash:0, nagad:0, rocket:0 };
+  nextId = d.nextId || { prod:7, sale:1, service:1, mfs:1, cash:1 };
+}
+async function ensureProfile(user){
+  currentUser = user; currentRole = 'user';
+  try{
+    const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if(error) throw error;
+    if(data){ currentRole = data.role || 'user'; return; }
+    // No profile yet: first profile in the shop becomes admin, rest become user
+    const { count } = await supabaseClient.from('profiles').select('*', { count:'exact', head:true });
+    const role = (count === 0) ? 'admin' : 'user';
+    const { error: insErr } = await supabaseClient.from('profiles').insert({ id:user.id, email:user.email, role });
+    if(insErr) throw insErr;
+    currentRole = role;
+    toast(role==='admin' ? '👑 আপনি Admin — প্রথম অ্যাকাউন্ট' : '✅ User অ্যাকাউন্ট তৈরি হয়েছে');
+  }catch(e){
+    cloudErrorMsg = 'profiles table: ' + (e.message||e);
+    currentRole = 'user';
+  }
+  setRoleBadge();
+}
+async function loadProfiles(){
+  if(!isAdmin()) return;
+  try{ const { data } = await supabaseClient.from('profiles').select('*').order('created_at'); allProfiles = data||[]; }
+  catch(e){ allProfiles = []; }
+}
+async function setUserRole(userId, role){
+  if(!isAdmin()) return toast('শুধু Admin role বদলাতে পারবে','error');
+  const { error } = await supabaseClient.from('profiles').update({ role }).eq('id', userId);
+  if(error) return toast('❌ '+error.message,'error');
+  await loadProfiles(); renderAdminTab(); toast('Role বদলে গেছে');
+}
+async function loadCloudData(){
+  setCloudBadge('☁️ Cloud: লোড হচ্ছে…');
+  try{
+    const { data, error } = await supabaseClient.from('shop_data').select('data').eq('id', 1).maybeSingle();
+    if(error) throw error;
+    if(data && data.data){
+      applyShopData(data.data);
+      cloudReady = true; cloudErrorMsg='';
+      setCloudBadge('☁️ Cloud: Connected ✓');
+      saveLocalCacheOnly();
+    } else {
+      // No cloud row yet: migrate this device's local data up once, else create empty row
+      const localRaw = localStorage.getItem('rafi_telecom_v12');
+      const payload = localRaw ? JSON.parse(localRaw) : collectShopData();
+      if(localRaw) applyShopData(payload);
+      const { error: upErr } = await supabaseClient.from('shop_data').upsert({ id:1, data: collectShopData() });
+      if(upErr) throw upErr;
+      cloudReady = true;
+      setCloudBadge('☁️ Cloud: Connected ✓');
+      if(localRaw) toast('☁️ এই ফোনের পুরনো হিসাব Cloud-এ উঠে গেছে');
+    }
+  }catch(e){
+    cloudReady = false; cloudErrorMsg = e.message||String(e);
+    setCloudBadge('☁️ Cloud: Offline (এই ডিভাইসে)');
+  }
+  showCloudNotice();
+}
+function scheduleCloudSave(){
+  if(!currentUser) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>{ saveCloudNow(); }, 600);
+}
+async function saveCloudNow(){
+  if(!currentUser || !cloudReady) return;
+  try{
+    _suppressRealtimeReload = true;
+    const { error } = await supabaseClient.from('shop_data').upsert({ id:1, data: collectShopData() });
+    if(error) throw error;
+    setCloudBadge('☁️ Cloud: Saved ✓ ' + new Date().toLocaleTimeString('bn-BD'));
+    setTimeout(()=>{ _suppressRealtimeReload=false; }, 1500);
+  }catch(e){
+    _suppressRealtimeReload=false;
+    setCloudBadge('☁️ Cloud: Save হয়নি');
+  }
+}
+function subscribeShopChanges(){
+  try{
+    if(_realtimeChannel) supabaseClient.removeChannel(_realtimeChannel);
+    _realtimeChannel = supabaseClient.channel('shop_data_changes')
+      .on('postgres_changes', { event:'*', schema:'public', table:'shop_data', filter:'id=eq.1' }, async ()=>{
+        if(_suppressRealtimeReload) return;
+        const { data } = await supabaseClient.from('shop_data').select('data').eq('id',1).maybeSingle();
+        if(data && data.data){ applyShopData(data.data); saveLocalCacheOnly(); renderAll(); }
+      }).subscribe();
+  }catch(e){ /* realtime optional */ }
+}
+
+// ========== LOCAL DATA MANAGEMENT (cache + cloud trigger) ==========
+function loadLocalData() {
+  const raw = localStorage.getItem('rafi_telecom_v12');
+  if(raw) {
+    try{ applyShopData(JSON.parse(raw)); }catch(e){}
+  } else {
+    categories = ['হেডফোন/ইয়ারফোন','মেমোরি কার্ড','কেবল','চার্জার','ব্যাটারি','ডিসপ্লে','অন্যান্য'];
+  }
+}
+function saveLocalCacheOnly(){
+  try{ localStorage.setItem('rafi_telecom_v12', JSON.stringify(collectShopData())); }catch(e){}
+}
+function saveLocalData() {
+  saveLocalCacheOnly();
+  scheduleCloudSave();
+}
+
+// ========== RENDER ALL TABS ==========
+function renderAll() {
+  renderDashboard();
+  renderSaleTab();
+  renderServicesTab();
+  renderMfsTab();
+  renderHistoryTab();
+  renderDuesTab();
+  renderCustomersTab();
+  renderCashTab();
+  renderProductsTab();
+  renderMonthlyTab();
+  renderAdminTab();
+  setRoleBadge();
+}
+
+// Dashboard (original + sync button)
+function renderDashboard() {
+  const dt = document.getElementById('dashboardDate')?.value || today();
+  const daySales = sales.filter(s=>s.date===dt);
+  const totalSales = daySales.reduce((s,x)=>s+x.totalAmount,0);
+  const cashSales = daySales.filter(s=>s.payment==='cash').reduce((s,x)=>s+x.totalAmount,0);
+  const creditSales = daySales.filter(s=>s.payment==='credit').reduce((s,x)=>s+x.totalAmount,0);
+  const servIncome = services.filter(s=>s.date===dt).reduce((s,x)=>s+x.amount,0);
+  const totalDues = sales.filter(s=>s.payment==='credit' && s.paidAmount<s.totalAmount).reduce((s,x)=>s+x.totalAmount-x.paidAmount,0);
+  document.getElementById('tab-dashboard').innerHTML = `
+    <div class="card"><div class="form-row"><div class="form-group"><label>📅 তারিখ</label><input type="date" id="dashboardDate" value="${dt}" onchange="renderDashboard()"></div><button class="btn btn-outline btn-sm" onclick="document.getElementById('dashboardDate').value='${today()}';renderDashboard()">আজ</button><button class="btn btn-primary btn-sm" id="syncNowBtn">☁️ Sync Now</button></div><div style="font-size:0.8em;color:#64748b;">লগইন: ${esc(currentUser?currentUser.email:'')} • Role: ${isAdmin()?'👑 Admin':'👤 User'} • ${cloudReady?'☁️ Cloud Connected — যেকোনো ডিভাইসে একই হিসাব':'⚠️ Cloud Offline — শুধু এই ডিভাইসে'}</div></div>
+    <div class="stats-grid">
+      <div class="stat-card sale"><div class="stat-value">${fmt(totalSales)}</div><div class="stat-label">মোট বিক্রয়</div></div>
+      <div class="stat-card cash"><div class="stat-value">${fmt(cashSales)}</div><div class="stat-label">ক্যাশ বিক্রয়</div></div>
+      <div class="stat-card due"><div class="stat-value">${fmt(creditSales)}</div><div class="stat-label">বাকি বিক্রয়</div></div>
+      <div class="stat-card service"><div class="stat-value">${fmt(servIncome)}</div><div class="stat-label">Flexilad আয়</div></div>
+      <div class="stat-card flexi-bal"><div class="stat-value">${fmt(flexiBalance)}</div><div class="stat-label">Flexilad ব্যালেন্স</div></div>
+      <div class="stat-card mfs-bkash"><div class="stat-value">${fmt(mfsBalances.bkash)}</div><div class="stat-label">Bkash</div></div>
+      <div class="stat-card mfs-nagad"><div class="stat-value">${fmt(mfsBalances.nagad)}</div><div class="stat-label">Nagad</div></div>
+      <div class="stat-card mfs-rocket"><div class="stat-value">${fmt(mfsBalances.rocket)}</div><div class="stat-label">Rocket</div></div>
+      <div class="stat-card cash"><div class="stat-value">${fmt(cashBalance)}</div><div class="stat-label">ক্যাশ</div></div>
+      <div class="stat-card due"><div class="stat-value">${fmt(totalDues)}</div><div class="stat-label">মোট বাকি</div></div>
+    </div>`;
+  document.getElementById('headerDate').textContent = '📅 ' + bdate(dt);
+  const sb=document.getElementById('syncNowBtn');
+  if(sb) sb.addEventListener('click', async ()=>{ await loadCloudData(); renderAll(); toast(cloudReady?'☁️ Cloud থেকে নতুন ডাটা এসেছে':'Cloud পাওয়া যায়নি — SQL চেক করো',''+(cloudReady?'success':'error')); });
+}
+
+// Sale tab (original)
+function renderSaleTab() {
+  document.getElementById('tab-sale').innerHTML = `
+    <div class="card"><h3>🛒 বিক্রয়</h3><div class="form-row"><div class="form-group"><label>পণ্য</label><select id="saleProduct">${products.map(p=>`<option value="${p.id}" data-price="${p.price}">${esc(p.name)} - ${fmt(p.price)}</option>`).join('')}</select></div><div class="form-group"><label>পরিমাণ</label><input type="number" id="saleQty" value="1" min="1"></div><div class="form-group"><label>একক মূল্য</label><input type="number" id="saleUnitPrice" value="0" step="0.01"></div></div><button class="btn btn-primary" id="addCartBtn">➕ কার্টে যোগ</button>
+    <div class="card" style="margin-top:10px;"><h4>🧾 কার্ট</h4><table><thead><tr><th>পণ্য</th><th class="text-right">মূল্য</th><th class="text-center">পরিমাণ</th><th class="text-right">সাবটোটাল</th><th></th></tr></thead><tbody id="cartBody">${cart.length?cart.map((item,idx)=>`<tr><td>${item.productName}</td><td class="text-right">${fmt(item.unitPrice)}</td><td class="text-center">${item.quantity}</td><td class="text-right amount">${fmt(item.unitPrice*item.quantity)}</td><td><button class="btn btn-danger btn-sm" onclick="removeFromCart(${idx})">🗑️</button></td></tr>`).join(''):'<tr><td colspan="5">কার্ট খালি</td></tr>'}</tbody></table><div style="font-weight:700;text-align:right;">সর্বমোট: ${fmt(cart.reduce((s,i)=>s+i.unitPrice*i.quantity,0))}</div></div>
+    <div class="form-row" style="margin-top:12px;"><div class="form-group"><label>পেমেন্ট</label><select id="salePayment"><option value="cash">💵 ক্যাশ</option><option value="credit">📒 বাকি</option></select></div><div class="form-group" id="creditGrp" style="display:none;"><label>ক্রেতা</label><input list="custList" id="saleCustomer" placeholder="নাম"><datalist id="custList"></datalist></div></div>
+    <button class="btn btn-accent btn-block" id="recSaleBtn">✅ বিক্রয় সম্পন্ন</button></div>`;
+  const sp=document.getElementById('saleProduct');
+  if(sp) sp.addEventListener('change',function(){ document.getElementById('saleUnitPrice').value = this.options[this.selectedIndex].dataset.price; });
+  document.getElementById('salePayment').addEventListener('change',function(){ document.getElementById('creditGrp').style.display = this.value==='credit'?'block':'none'; });
+  document.getElementById('addCartBtn').addEventListener('click',addToCart);
+  document.getElementById('recSaleBtn').addEventListener('click',recordSale);
+  const dl = document.getElementById('custList'); dl.innerHTML = '';
+  [...new Set(sales.filter(s=>s.customerName).map(s=>s.customerName))].forEach(c=>{ const o=document.createElement('option'); o.value=c; dl.appendChild(o); });
+}
+function addToCart(){
+  const pid = parseInt(document.getElementById('saleProduct').value);
+  const product = products.find(p=>p.id===pid);
+  if(!product) return toast('পণ্য বাছুন','error');
+  const qty = parseInt(document.getElementById('saleQty').value);
+  const up = parseFloat(document.getElementById('saleUnitPrice').value);
+  if(isNaN(qty)||qty<1||isNaN(up)||up<0) return toast('সঠিক তথ্য দিন','error');
+  cart.push({ productId:product.id, productName:product.name, unitPrice:up, quantity:qty });
+  renderSaleTab(); toast(`${product.name} যোগ হয়েছে`);
+}
+function removeFromCart(idx){ cart.splice(idx,1); renderSaleTab(); }
+function recordSale(){
+  if(!cart.length) return toast('কার্ট খালি','error');
+  const payment = document.getElementById('salePayment').value;
+  const cname = document.getElementById('saleCustomer')?.value.trim()||'';
+  if(payment==='credit' && !cname) return toast('ক্রেতার নাম দিন','error');
+  if(payment==='credit' && cname && !customers.includes(cname)) { customers.push(cname); }
+  const tid = Date.now(); let cashAdd = 0;
+  cart.forEach(item=>{
+    const se = { id:nextId.sale++, date:today(), productId:item.productId, productName:item.productName, quantity:item.quantity, unitPrice:item.unitPrice, totalAmount:item.unitPrice*item.quantity, payment, customerName:cname, paidAmount:0, transactionId:tid };
+    sales.push(se);
+    if(payment==='cash') cashAdd += se.totalAmount;
+  });
+  if(payment==='cash'){ cashBalance += cashAdd; cashLog.push({ id:nextId.cash++, date:today(), desc:`বিক্রয় #${tid}`, amount:cashAdd, balanceAfter:cashBalance }); }
+  saveLocalData(); cart=[]; renderSaleTab(); renderAll();
+  const sc=document.getElementById('saleCustomer'); if(sc) sc.value='';
+  const cg=document.getElementById('creditGrp'); if(cg) cg.style.display='none';
+  toast('বিক্রয় সম্পন্ন — Cloud-এ save হচ্ছে');
+}
+
+// Services (Flexilad) - original, balance adjust Admin-only
+function renderServicesTab(){
+  document.getElementById('tab-services').innerHTML = `
+    <div class="card"><h3>📱 Flexilad ব্যালেন্স</h3><div class="balance-row">
+      <div class="balance-box" style="border-left:4px solid var(--service-color);"><h4 style="color:var(--service-color);">Flexilad ব্যালেন্স</h4><div class="bal-amount">${fmt(flexiBalance)}</div>${isAdmin()?'<button class="btn btn-sm btn-outline" id="adjFlexiBtn">➕/➖ ঠিক করুন</button>':'<div style="font-size:0.8em;color:#64748b;">ব্যালেন্স ঠিক করতে Admin লাগবে</div>'}</div>
+      <div class="balance-box" style="border-left:4px solid var(--cash-color);"><h4 style="color:var(--cash-color);">আজকের আয়</h4><div class="bal-amount">${fmt(services.filter(s=>s.date===today()).reduce((s,x)=>s+x.amount,0))}</div></div>
+    </div></div>
+    <div class="card"><h3>📱 Flexilad রেকর্ড</h3><div class="form-row"><div class="form-group"><label>অপারেটর</label><select id="flexiOp"><option>গ্রামীণফোন</option><option>রবি</option><option>বাংলালিংক</option><option>টেলিটক</option></select></div><div class="form-group"><label>মোবাইল নম্বর</label><input type="text" id="flexiNumber"></div><div class="form-group"><label>পরিমাণ (টাকা)</label><input type="number" id="serviceAmount" step="0.01" min="1"></div></div><button class="btn btn-primary btn-block" id="recSvcBtn">✅ রেকর্ড</button></div>
+    <div class="card"><h3>📋 আজকের Flexilad</h3><div class="table-wrapper"><table><thead><tr><th>সময়</th><th>বিবরণ</th><th class="text-right">টাকা</th></tr></thead><tbody>${services.filter(s=>s.date===today()).map(s=>`<tr><td>${s.id}</td><td>${esc(s.desc)}</td><td class="text-right amount">${fmt(s.amount)}</td></tr>`).join('')||'<tr><td colspan="3">কোনো Flexilad নেই</td></tr>'}</tbody></table></div></div>`;
+  const adj=document.getElementById('adjFlexiBtn');
+  if(adj) adj.addEventListener('click',()=>{
+    const delta = prompt(`Flexilad ব্যালেন্সে কত টাকা যোগ/বিয়োগ?`,0); if(!delta) return;
+    const d = parseFloat(delta); if(isNaN(d)) return toast('সংখ্যা দিন','error');
+    if(d>0 && cashBalance<d) return toast('হাতে ক্যাশ নেই','error');
+    if(d<0 && flexiBalance<Math.abs(d)) return toast('Flexilad ব্যালেন্স নেই','error');
+    flexiBalance += d; cashBalance -= d;
+    cashLog.push({ id:nextId.cash++, date:today(), desc:`Flexilad ব্যালেন্স ${d>=0?'যোগ':'তুলুন'}`, amount:-d, balanceAfter:cashBalance });
+    saveLocalData(); renderAll();
+  });
+  document.getElementById('recSvcBtn').addEventListener('click',()=>{
+    const amount = parseFloat(document.getElementById('serviceAmount').value);
+    const num = document.getElementById('flexiNumber').value.trim();
+    const op = document.getElementById('flexiOp').value;
+    if(isNaN(amount)||amount<=0) return toast('টাকা দিন','error'); if(!num) return toast('নম্বর দিন','error');
+    if(flexiBalance<amount) return toast('Flexilad ব্যালেন্স নেই','error');
+    flexiBalance -= amount; cashBalance += amount;
+    services.push({ id:nextId.service++, date:today(), type:'flexiload', desc:`Flexilad ${op} - ${num}`, amount });
+    cashLog.push({ id:nextId.cash++, date:today(), desc:`Flexilad (${op})`, amount, balanceAfter:cashBalance });
+    saveLocalData(); renderAll();
+    document.getElementById('serviceAmount').value=''; document.getElementById('flexiNumber').value='';
+    toast('Flexilad রেকর্ড হয়েছে');
+  });
+}
+
+// MFS tab (original, balance adjust Admin-only)
+function renderMfsTab(){
+  const adjBtn = (id)=> isAdmin() ? `<button class="btn btn-sm btn-outline" id="${id}">➕/➖ ঠিক করুন</button>` : `<div style="font-size:0.8em;color:#64748b;">Admin ছাড়া ঠিক করা যাবে না</div>`;
+  document.getElementById('tab-mfs').innerHTML = `
+    <div class="card"><h3>💳 MFS ব্যালেন্স</h3><div class="balance-row">
+      <div class="balance-box" style="border-left:4px solid var(--bkash);"><h4 style="color:var(--bkash);">Bkash</h4><div class="bal-amount">${fmt(mfsBalances.bkash)}</div>${adjBtn('adjMfsBkash')}</div>
+      <div class="balance-box" style="border-left:4px solid var(--nagad);"><h4 style="color:var(--nagad);">Nagad</h4><div class="bal-amount">${fmt(mfsBalances.nagad)}</div>${adjBtn('adjMfsNagad')}</div>
+      <div class="balance-box" style="border-left:4px solid var(--rocket);"><h4 style="color:var(--rocket);">Rocket</h4><div class="bal-amount">${fmt(mfsBalances.rocket)}</div>${adjBtn('adjMfsRocket')}</div>
+    </div></div>
+    <div class="card"><h3>➕ লেনদেন</h3><div class="form-row">
+      <div class="form-group"><label>টাইপ</label><select id="mfsType"><option value="send">📤 সেন্ড</option><option value="receive">📥 রিসিভ</option><option value="bill">🧾 বিল</option></select></div>
+      <div class="form-group"><label>প্রদানকারী</label><select id="mfsProvider"><option>Bkash</option><option>Nagad</option><option>Rocket</option></select></div>
+      <div class="form-group"><label>টাকা</label><input type="number" id="mfsAmount" step="0.01" min="1"></div>
+      <div class="form-group"><label>বিবরণ</label><input type="text" id="mfsNote"></div>
+    </div><div class="form-row" id="billDet" style="display:none;"><div class="form-group"><label>বিল টাইপ</label><select id="mfsBillType"><option>বিদ্যুৎ</option><option>পানি</option><option>গ্যাস</option></select></div><div class="form-group"><label>রেফারেন্স</label><input type="text" id="mfsBillRef"></div></div>
+    <button class="btn btn-accent btn-block" id="recMfsBtn">✅ লেনদেন যোগ</button></div>
+    <div class="card"><h3>📋 আজকের লেনদেন</h3><div class="table-wrapper"><table><thead><tr><th>সময়</th><th>টাইপ</th><th>প্রদানকারী</th><th>বিবরণ</th><th class="text-right">টাকা</th></tr></thead><tbody>${mfsTransactions.filter(t=>t.date===today()).map(t=>`<tr><td>${t.id}</td><td>${t.type==='send'?'<span class="badge badge-send">সেন্ড</span>':t.type==='receive'?'<span class="badge badge-receive">রিসিভ</span>':'<span class="badge badge-bill">বিল</span>'}</td><td>${t.provider.toUpperCase()}</td><td>${t.note||''}</td><td class="text-right amount">${fmt(t.amount)}</td></tr>`).join('')||'<tr><td colspan="5">কোনো লেনদেন নেই</td></tr>'}</tbody></table></div></div>`;
+  document.getElementById('mfsType').addEventListener('change',function(){ document.getElementById('billDet').style.display = this.value==='bill'?'flex':'none'; });
+  if(isAdmin()){
+    ['bkash','nagad','rocket'].forEach(p=>{
+      const btn=document.getElementById('adjMfs'+p.charAt(0).toUpperCase()+p.slice(1));
+      if(btn) btn.addEventListener('click',()=>{
+        const delta = prompt(`${p.toUpperCase()} ব্যালেন্সে কত টাকা যোগ/বিয়োগ?`,0); if(!delta) return;
+        const d = parseFloat(delta); if(isNaN(d)) return toast('সংখ্যা দিন','error');
+        if(d>0 && cashBalance<d) return toast('হাতে ক্যাশ নেই','error');
+        if(d<0 && mfsBalances[p]<Math.abs(d)) return toast(`${p} ব্যালেন্স নেই`,'error');
+        mfsBalances[p] += d; cashBalance -= d;
+        cashLog.push({ id:nextId.cash++, date:today(), desc:`${p} ব্যালেন্স ${d>=0?'যোগ':'তুলুন'}`, amount:-d, balanceAfter:cashBalance });
+        saveLocalData(); renderAll();
+      });
+    });
+  }
+  document.getElementById('recMfsBtn').addEventListener('click',()=>{
+    const type = document.getElementById('mfsType').value;
+    const provider = document.getElementById('mfsProvider').value.toLowerCase();
+    const amount = parseFloat(document.getElementById('mfsAmount').value);
+    let note = document.getElementById('mfsNote').value.trim();
+    if(isNaN(amount)||amount<=0) return toast('টাকা দিন','error');
+    if((type==='send'||type==='bill') && mfsBalances[provider]<amount) return toast(`${provider} ব্যালেন্স নেই`,'error');
+    if(type==='send'||type==='bill') mfsBalances[provider] -= amount; else mfsBalances[provider] += amount;
+    if(type==='bill'){ const bt=document.getElementById('mfsBillType').value, ref=document.getElementById('mfsBillRef').value.trim(); note = `বিল: ${bt}${ref?' - '+ref:''}`; }
+    if(type==='receive'){ cashBalance += amount; cashLog.push({ id:nextId.cash++, date:today(), desc:`MFS রিসিভ (${provider})`, amount, balanceAfter:cashBalance }); }
+    else { cashBalance -= amount; cashLog.push({ id:nextId.cash++, date:today(), desc:`MFS ${type==='send'?'সেন্ড':'বিল'} (${provider})`, amount:-amount, balanceAfter:cashBalance }); }
+    mfsTransactions.push({ id:nextId.mfs++, date:today(), type, provider, amount, note });
+    saveLocalData(); renderAll();
+    document.getElementById('mfsAmount').value=''; document.getElementById('mfsNote').value='';
+  });
+}
+
+// History, Dues, Customers, Cash, Monthly (original)
+function renderHistoryTab(){
+  const rows = [...sales.map(s=>({...s,type:'বিক্রয়'})), ...services.map(s=>({...s,type:'Flexilad'})), ...mfsTransactions.map(t=>({...t,type:'MFS'}))].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
+  document.getElementById('tab-history').innerHTML = `<div class="card"><h3>📋 ইতিহাস</h3><div class="table-wrapper"><table><thead><tr><th>তারিখ</th><th>ধরন</th><th>বিবরণ</th><th class="text-right">টাকা</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${bdate(r.date)}</td><td>${r.type}</td><td>${r.productName||r.desc||(r.provider?r.provider.toUpperCase()+' '+r.note:'')}</td><td class="text-right amount">${fmt(r.totalAmount||r.amount)}</td></tr>`).join('')||'<tr><td colspan="4">কোনো রেকর্ড নেই</td></tr>'}</tbody></table></div></div>`;
+}
+function renderDuesTab(){
+  const grouped = {};
+  sales.filter(s=>s.payment==='credit'&&s.paidAmount<s.totalAmount).forEach(s=>{
+    const name = s.customerName||'অজানা';
+    if(!grouped[name]) grouped[name] = { total:0, paid:0, sales:[] };
+    grouped[name].total += s.totalAmount;
+    grouped[name].paid += s.paidAmount;
+    grouped[name].sales.push(s);
+  });
+  const totalDue = Object.values(grouped).reduce((s,g)=>s+g.total-g.paid,0);
+  document.getElementById('tab-dues').innerHTML = `
+    <div class="card"><h3>📒 বাকি (মোট: ${fmt(totalDue)})</h3>
+    ${Object.entries(grouped).map(([n,d])=>`<div class="customer-card" onclick="showCustDetail('${esc(n)}')"><div><strong>👤 ${esc(n)}</strong><br><small>মোট: ${fmt(d.total)} | জমা: ${fmt(d.paid)}</small></div><div style="color:var(--due-color);font-weight:700;">${fmt(d.total-d.paid)}</div></div>`).join('')||'<div>কোনো বাকি নেই</div>'}
+    </div><div class="card" id="custDetCard" style="display:none;"></div>`;
+}
+window.showCustDetail = (name)=>{
+  const data = sales.filter(s=>s.customerName===name && s.payment==='credit' && s.paidAmount<s.totalAmount);
+  const card = document.getElementById('custDetCard'); card.style.display='block';
+  card.innerHTML = `<h3>🔍 ${esc(name)}</h3><div class="table-wrapper"><table><thead><tr><th>তারিখ</th><th>পণ্য</th><th class="text-right">মোট</th><th class="text-right">জমা</th><th class="text-right">বাকি</th><th></th></tr></thead><tbody>${data.map(s=>`<tr><td>${bdate(s.date)}</td><td>${s.productName} x${s.quantity}</td><td class="text-right">${fmt(s.totalAmount)}</td><td class="text-right" style="color:green;">${fmt(s.paidAmount)}</td><td class="text-right" style="color:var(--due-color);">${fmt(s.totalAmount-s.paidAmount)}</td><td><button class="btn btn-sm btn-warning" onclick="payDue(${s.id},${s.totalAmount-s.paidAmount})">জমা</button></td></tr>`).join('')}</tbody></table></div>`;
+};
+window.payDue = (sid,max)=>{
+  const amt = prompt(`কত টাকা জমা দিবেন? (সর্বোচ্চ: ${max})`, max); if(!amt) return;
+  const pay = parseFloat(amt); if(isNaN(pay)||pay<=0||pay>max) return toast('সঠিক টাকা দিন','error');
+  const sale = sales.find(x=>x.id===sid); if(!sale) return;
+  sale.paidAmount += pay; cashBalance += pay;
+  cashLog.push({ id:nextId.cash++, date:today(), desc:`বাকি পরিশোধ #${sid}`, amount:pay, balanceAfter:cashBalance });
+  saveLocalData(); renderAll();
+};
+function renderCustomersTab(){
+  const all = [...new Set(sales.filter(s=>s.customerName).map(s=>s.customerName))];
+  document.getElementById('tab-customers').innerHTML = `<div class="card"><h3>👥 ক্রেতা</h3>${all.map(n=>`<div class="customer-card"><div>👤 ${esc(n)}</div><div>${fmt(sales.filter(s=>s.customerName===n&&s.payment==='credit'&&s.paidAmount<s.totalAmount).reduce((s,x)=>s+x.totalAmount-x.paidAmount,0))} বাকি</div></div>`).join('')||'<div>কোনো ক্রেতা নেই</div>'}</div>`;
+}
+function renderCashTab(){
+  document.getElementById('tab-cash').innerHTML = `
+    <div class="card"><h3>💵 ক্যাশ: ${fmt(cashBalance)}</h3><div class="form-row"><div class="form-group"><label>➕ যোগ</label><input type="number" id="cashAddAmt"><input type="text" id="cashAddNote" placeholder="কারণ"></div><button class="btn btn-primary btn-sm" id="cashAddBtn">➕</button><div class="form-group"><label>➖ খরচ</label><input type="number" id="cashRemAmt"><input type="text" id="cashRemNote" placeholder="কারণ"></div><button class="btn btn-danger btn-sm" id="cashRemBtn">➖</button></div></div>
+    <div class="card"><h3>📜 লেনদেন</h3><div class="table-wrapper"><table><thead><tr><th>তারিখ</th><th>বিবরণ</th><th class="text-right">পরিমাণ</th><th class="text-right">ব্যালেন্স</th></tr></thead><tbody>${cashLog.map(l=>`<tr><td>${bdate(l.date)}</td><td>${esc(l.desc)}</td><td class="text-right amount" style="color:${l.amount>=0?'green':'red'}">${l.amount>=0?'+':''}${fmt(l.amount)}</td><td class="text-right">${fmt(l.balanceAfter)}</td></tr>`).join('')||'<tr><td colspan="4">কোনো লেনদেন নেই</td></tr>'}</tbody></table></div></div>`;
+  document.getElementById('cashAddBtn').addEventListener('click',()=>{ adjustCash('add'); });
+  document.getElementById('cashRemBtn').addEventListener('click',()=>{ adjustCash('remove'); });
+}
+function adjustCash(type){
+  const amt = parseFloat(document.getElementById(type==='add'?'cashAddAmt':'cashRemAmt').value);
+  const note = document.getElementById(type==='add'?'cashAddNote':'cashRemNote').value.trim();
+  if(isNaN(amt)||amt<=0) return toast('টাকা দিন','error');
+  if(type==='remove' && amt>cashBalance) return toast('পর্যাপ্ত ব্যালেন্স নেই','error');
+  cashBalance += (type==='add'?amt:-amt);
+  cashLog.push({ id:nextId.cash++, date:today(), desc:(type==='add'?'➕ ':'➖ ')+(note||(type==='add'?'ক্যাশ যোগ':'খরচ')), amount:type==='add'?amt:-amt, balanceAfter:cashBalance });
+  saveLocalData(); renderAll();
+  document.getElementById(type==='add'?'cashAddAmt':'cashRemAmt').value='';
+  document.getElementById(type==='add'?'cashAddNote':'cashRemNote').value='';
+}
+
+// ========== PRODUCTS TAB (original, edit/delete Admin-only) ==========
+function renderProductsTab(){
+  const catOptions = categories.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const admin = isAdmin();
+  document.getElementById('tab-products').innerHTML = `
+    ${admin ? `<div class="card"><h3>➕ নতুন পণ্য</h3><div class="form-row">
+      <div class="form-group"><label>নাম</label><input type="text" id="prodName"></div>
+      <div class="form-group"><label>ক্যাটাগরি</label><select id="prodCat">${catOptions}</select></div>
+      <div class="form-group"><label>মূল্য</label><input type="number" id="prodPrice" step="0.01" min="0"></div>
+      <button class="btn btn-primary" id="addProdBtn">➕ যোগ</button>
+    </div></div>
+    <div class="card"><h3>📁 ক্যাটাগরি ব্যবস্থাপনা</h3>
+      <div class="form-row">
+        <div class="form-group"><input type="text" id="newCatName" placeholder="নতুন ক্যাটাগরি নাম"></div>
+        <button class="btn btn-accent" id="addCatBtn">➕ ক্যাটাগরি যোগ</button>
+      </div>
+      <div class="cat-list" id="catListContainer">
+        ${categories.map(c=>`<span class="cat-tag">${c} <button class="cat-edit" data-cat="${c}">✏️</button> <button class="cat-del" data-cat="${c}">❌</button></span>`).join('')}
+      </div>
+    </div>` : `<div class="notice">👤 User হিসেবে তুমি পণ্য দেখতে ও বিক্রি করতে পারবা, কিন্তু পণ্য যোগ / এডিট / ডিলিট আর ক্যাটাগরি বদলাতে পারবা না — এটা শুধু Admin-এর কাজ।</div>`}
+    <div class="card"><h3>📦 পণ্য তালিকা (${products.length}টি)</h3>
+      <div class="table-wrapper"><table><thead><tr><th>#</th><th>নাম</th><th>ক্যাটাগরি</th><th class="text-right">মূল্য</th>${admin?'<th></th>':''}</tr></thead>
+      <tbody id="productTableBody">
+        ${products.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.category}</td><td class="text-right amount">${fmt(p.price)}</td>${admin?`<td class="text-center"><button class="btn btn-edit btn-sm" id="editProd${p.id}">✏️</button> <button class="btn btn-danger btn-sm" id="delProd${p.id}">🗑️</button></td>`:''}</tr>`).join('')||`<tr><td colspan="${admin?5:4}">কোনো পণ্য নেই</td></tr>`}
+      </tbody></table></div>
+    </div>`;
+  if(!admin) return;
+  document.getElementById('addProdBtn').addEventListener('click',()=>{
+    const n=document.getElementById('prodName').value.trim();
+    const c=document.getElementById('prodCat').value;
+    const p=parseFloat(document.getElementById('prodPrice').value);
+    if(!n||isNaN(p)||p<0) return toast('সঠিক তথ্য দিন','error');
+    products.push({ id:nextId.prod++, name:n, category:c, price:p });
+    saveLocalData(); renderAll();
+    document.getElementById('prodName').value=''; document.getElementById('prodPrice').value='';
+    toast('পণ্য যোগ হয়েছে');
+  });
+  document.getElementById('addCatBtn').addEventListener('click',()=>{
+    const newCat = document.getElementById('newCatName').value.trim();
+    if(!newCat) return toast('ক্যাটাগরি নাম দিন','error');
+    if(categories.includes(newCat)) return toast('ক্যাটাগরি ইতিমধ্যে আছে','error');
+    categories.push(newCat);
+    saveLocalData(); renderAll();
+    document.getElementById('newCatName').value='';
+    toast('ক্যাটাগরি যোগ হয়েছে');
+  });
+  document.querySelectorAll('.cat-edit').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const oldCat = e.target.dataset.cat;
+      const newCat = prompt('ক্যাটাগরির নতুন নাম লিখুন', oldCat);
+      if(!newCat || newCat.trim()==='' || newCat===oldCat) return;
+      if(categories.includes(newCat.trim())) return toast('ক্যাটাগরি ইতিমধ্যে আছে','error');
+      const idx = categories.indexOf(oldCat);
+      if(idx>-1) categories[idx] = newCat.trim();
+      products.forEach(p=>{ if(p.category===oldCat) p.category = newCat.trim(); });
+      saveLocalData(); renderAll();
+      toast('ক্যাটাগরি আপডেট হয়েছে');
+    });
+  });
+  document.querySelectorAll('.cat-del').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const cat = e.target.dataset.cat;
+      if(!confirm(`"${cat}" ক্যাটাগরি মুছে ফেলবেন? এতে পণ্যের ক্যাটাগরি অপরিবর্তিত থাকবে।`)) return;
+      categories = categories.filter(c=>c!==cat);
+      saveLocalData(); renderAll();
+      toast('ক্যাটাগরি মুছে ফেলা হয়েছে');
+    });
+  });
+  products.forEach(p=>{
+    const eb=document.getElementById('editProd'+p.id);
+    if(eb) eb.addEventListener('click',()=>{
+      const newPrice = prompt(`"${p.name}" এর নতুন মূল্য লিখুন`, p.price);
+      if(newPrice===null) return;
+      const price = parseFloat(newPrice);
+      if(isNaN(price)||price<0) return toast('সঠিক মূল্য দিন','error');
+      const newCat = prompt(`"${p.name}" এর ক্যাটাগরি পরিবর্তন করতে চান? (বর্তমান: ${p.category})\nলিখুন অথবা বাদ দিন`, p.category);
+      if(newCat && categories.includes(newCat.trim())) p.category = newCat.trim();
+      else if(newCat && !categories.includes(newCat.trim())) { categories.push(newCat.trim()); }
+      p.price = price;
+      saveLocalData(); renderAll();
+      toast('পণ্য আপডেট হয়েছে');
+    });
+    const db=document.getElementById('delProd'+p.id);
+    if(db) db.addEventListener('click',()=>{
+      if(!confirm(`"${p.name}" পণ্যটি মুছে ফেলবেন?`)) return;
+      products = products.filter(x=>x.id!==p.id);
+      saveLocalData(); renderAll();
+      toast('পণ্য মুছে ফেলা হয়েছে');
+    });
+  });
+}
+
+// Monthly tab (original)
+function renderMonthlyTab(){
+  document.getElementById('tab-monthly').innerHTML = `<div class="card"><div class="form-row"><div class="form-group"><label>মাস</label><input type="month" id="monthlyMonth" value="${today().slice(0,7)}"></div><button class="btn btn-primary" id="monBtn">📊 হিসাব</button></div></div><div id="monStats"></div>`;
+  document.getElementById('monBtn').addEventListener('click',()=>{
+    const month = document.getElementById('monthlyMonth').value; if(!month) return;
+    const p = month, sM=sales.filter(s=>s.date.startsWith(p)), svM=services.filter(s=>s.date.startsWith(p)), mfM=mfsTransactions.filter(t=>t.date.startsWith(p)), cM=cashLog.filter(l=>l.date.startsWith(p));
+    const tS=sM.reduce((s,x)=>s+x.totalAmount,0), tSv=svM.reduce((s,x)=>s+x.amount,0);
+    const netM={bkash:0,nagad:0,rocket:0}; mfM.forEach(t=>{ if(t.type==='send'||t.type==='bill') netM[t.provider]-=t.amount; else netM[t.provider]+=t.amount; });
+    const cIn=cM.filter(l=>l.amount>0).reduce((s,l)=>s+l.amount,0), cOut=cM.filter(l=>l.amount<0).reduce((s,l)=>s+Math.abs(l.amount),0);
+    document.getElementById('monStats').innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card sale"><div class="stat-value">${fmt(tS)}</div><div class="stat-label">বিক্রয়</div></div>
+        <div class="stat-card service"><div class="stat-value">${fmt(tSv)}</div><div class="stat-label">Flexilad</div></div>
+        <div class="stat-card mfs-bkash"><div class="stat-value">${fmt(netM.bkash)}</div><div class="stat-label">Bkash নেট</div></div>
+        <div class="stat-card mfs-nagad"><div class="stat-value">${fmt(netM.nagad)}</div><div class="stat-label">Nagad নেট</div></div>
+        <div class="stat-card mfs-rocket"><div class="stat-value">${fmt(netM.rocket)}</div><div class="stat-label">Rocket নেট</div></div>
+        <div class="stat-card cash"><div class="stat-value">${fmt(cIn)}</div><div class="stat-label">ক্যাশ ইন</div></div>
+        <div class="stat-card due"><div class="stat-value">${fmt(cOut)}</div><div class="stat-label">খরচ</div></div>
+        <div class="stat-card cash"><div class="stat-value">${fmt(tS+tSv+cIn-cOut)}</div><div class="stat-label">নেট</div></div>
+      </div>`;
+  });
+}
+
+// ========== ADMIN TAB (new) ==========
+function renderAdminTab(){
+  const el=document.getElementById('tab-admin'); if(!el) return;
+  if(!isAdmin()){
+    el.innerHTML = `<div class="card"><h3>👑 Admin Panel</h3><p>এই পেজ শুধু Admin দেখতে পারবে। তুমি এখন User (Staff) হিসেবে লগইন করেছো।</p></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="card"><h3>👑 Admin Panel</h3>
+      <p style="font-size:0.9em;">লগইন: <b>${esc(currentUser?currentUser.email:'')}</b> • Cloud: <b>${cloudReady?'Connected ✓':'Offline — SQL চালাও'}</b></p>
+      <p style="font-size:0.85em;color:#64748b;margin-top:6px;">নিয়ম: Admin সব করতে পারে — পণ্য/ক্যাটাগরি যোগ-এডিট-ডিলিট, ব্যালেন্স ঠিক করা, User-এর role বদলানো। User (Staff) করতে পারে — বিক্রয়, Flexiload, Bkash/Nagad/Rocket লেনদেন, বাকি জমা, ক্যাশ যোগ/খরচ, ইতিহাস দেখা। User পণ্য ডিলিট বা ব্যালেন্স ঠিক করতে পারবে না।</p>
+      <div class="form-row" style="margin-top:10px;"><button class="btn btn-primary btn-sm" id="reloadProfilesBtn">🔄 ইউজার লিস্ট রিফ্রেশ</button><button class="btn btn-outline btn-sm" id="adminSyncBtn">☁️ Cloud Sync Now</button></div>
+    </div>
+    <div class="card"><h3>👥 ইউজার ও Role (${allProfiles.length} জন)</h3>
+      <div class="table-wrapper"><table><thead><tr><th>ইমেইল</th><th>Role</th><th>Joined</th><th></th></tr></thead><tbody>
+      ${allProfiles.map(p=>`<tr><td>${esc(p.email||'')}</td><td><span class="badge ${p.role==='admin'?'badge-admin':'badge-user'}">${p.role==='admin'?'👑 Admin':'👤 User'}</span></td><td>${p.created_at?new Date(p.created_at).toLocaleDateString('bn-BD'):''}</td><td>${p.id!==currentUser.id ? `<button class="btn btn-sm ${p.role==='admin'?'btn-outline':'btn-primary'}" onclick="setUserRole('${p.id}','${p.role==='admin'?'user':'admin'}')">${p.role==='admin'?'User বানাও':'Admin বানাও'}</button>` : '<small>(তুমি)</small>'}</td></tr>`).join('')||'<tr><td colspan="4">কোনো ইউজার পাওয়া যায়নি — Refresh চাপো</td></tr>'}
+      </tbody></table></div>
+      <p style="font-size:0.8em;color:#64748b;margin-top:8px;">নতুন Staff-কে বলো: Vercel লিংক খুলে “নতুন অ্যাকাউন্ট তৈরি” চাপতে — সে User হবে, তোমার হিসাবই দেখবে। ভুল করে কেউ প্রথমে Admin হয়ে গেলে এখান থেকে User বানিয়ে দিও।</p>
+    </div>`;
+  const rp=document.getElementById('reloadProfilesBtn');
+  if(rp) rp.addEventListener('click', async ()=>{ await loadProfiles(); renderAdminTab(); });
+  const as=document.getElementById('adminSyncBtn');
+  if(as) as.addEventListener('click', async ()=>{ await saveCloudNow(); await loadCloudData(); renderAll(); toast('Sync শেষ'); });
+}
+window.setUserRole = setUserRole;
+
+// Tab switching
+document.getElementById('tabNav').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn'); if(!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+});
+
+// ========== INIT ==========
+async function initApp() {
+  loadLocalData();
+  renderAll();
+  setRoleBadge();
+  if(currentUser){
+    await ensureProfile(currentUser);
+    await loadCloudData();
+    await loadProfiles();
+    renderAll();
+    subscribeShopChanges();
+    if(cloudReady) toast('☁️ Cloud থেকে হিসাব লোড হয়েছে');
+  }
+}
+
+// Auth observer
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    currentUser = session.user;
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('appMain').style.display = 'block';
+    initApp();
+  } else {
+    currentUser = null; currentRole='user'; cloudReady=false;
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('appMain').style.display = 'none';
+  }
+});
+
+// Check session on load
+supabaseClient.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    currentUser = session.user;
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('appMain').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('appMain').style.display = 'none';
+  }
+});
+
+// Attach login/register/logout listeners
+document.getElementById('loginBtn').addEventListener('click', handleLogin);
+document.getElementById('registerBtn').addEventListener('click', handleRegister);
+document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+</script>
+</body>
+</html>
